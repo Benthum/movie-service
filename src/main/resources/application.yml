@@ -1,0 +1,36 @@
+
+spring.output.ansi.enabled: detect
+
+
+jasypt:
+    encryptor:
+        password: ${JASYPT_ENCRYPTOR_PASSWORD:}
+
+---
+server:
+  context-path: ${SERVER_CONTEXT_PATH:/}
+  port: ${SERVER_PORT:8443}
+  ssl:
+    enabled: ${SSL_ENABLED:true}
+    key-store: ${SSL_KEYSTORE:}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD:}
+    protocol: TLS
+
+spring:
+  profiles:  production
+
+  datasource:
+    url: ${DATASOURCE_URL:}
+    username: ${DATASOURCE_USERNAME:}
+    password: ${DATASOURCE_PASSWORD:}
+    dbcp:
+      driver-class-name: com.mysql.jdbc.Driver
+      max-active: 5
+      test-on-borrow: true
+      validation-query: SELECT 1
+
+  jpa:
+    hibernate:
+      ddl-auto: ${DATASOURCE_DDL_AUTO:validate}
+    properties:
+      show-sql: ${DATASOURCE_SHOW_SQL:true}
