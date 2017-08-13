@@ -1,6 +1,7 @@
 package com.benthum.movie.controller
 
 import com.benthum.movie.StaticValues
+import com.benthum.movie.model.MovieCount
 import com.benthum.movie.service.MovieService
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
@@ -46,6 +47,21 @@ class MovieController {
             def output = JsonOutput.toJson([
                     message: StaticValues.UnableToUpdateMovie])
             return new ResponseEntity<Object>(output, HttpStatus.BAD_REQUEST)
+        }
+        catch (Exception ex) {
+            def output = JsonOutput.toJson([
+                    message: StaticValues.InternalServerError,
+                    error: ex.message])
+            log.error(output, ex)
+            return new ResponseEntity<String>(output, HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.GET, value="/count", produces = "application/json")
+    @ResponseBody
+    ResponseEntity<Object> count() {
+        try {
+            return new ResponseEntity<MovieCount>(movieService.getCount(), HttpStatus.OK)
         }
         catch (Exception ex) {
             def output = JsonOutput.toJson([

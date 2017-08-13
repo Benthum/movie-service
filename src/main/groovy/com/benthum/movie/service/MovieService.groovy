@@ -1,7 +1,9 @@
 package com.benthum.movie.service
 
+import com.benthum.movie.StaticValues
 import com.benthum.movie.model.CreateMovie
 import com.benthum.movie.model.Movie
+import com.benthum.movie.model.MovieCount
 import com.benthum.movie.model.Resolution
 import com.benthum.movie.model.UpdateMovie
 import com.benthum.movie.repository.MovieRepository
@@ -73,5 +75,23 @@ class MovieService {
         }
 
         movieRepository.save(movie)
+    }
+
+    MovieCount getCount() {
+        MovieCount count = new MovieCount()
+
+        count.totalCount = movieRepository.count()
+        count.watchedCount = movieRepository.countByWatchedTrue()
+        count.notWatchedCount = movieRepository.countByWatchedFalse()
+        count.ownedCount = movieRepository.countByOwnedTrue()
+        count.notOwnedCount = movieRepository.countByOwnedFalse()
+        count.unknownResolutionCount = movieRepository.countByResolution(new Resolution(StaticValues.Unknown))
+        count.p480Count = movieRepository.countByResolution(new Resolution(StaticValues.P480))
+        count.p720Count = movieRepository.countByResolution(new Resolution(StaticValues.P720))
+        count.p1080Count = movieRepository.countByResolution(new Resolution(StaticValues.P1080))
+        count.p1440Count = movieRepository.countByResolution(new Resolution(StaticValues.P1440))
+        count.p2160Count = movieRepository.countByResolution(new Resolution(StaticValues.P2160))
+
+        return count
     }
 }

@@ -21,13 +21,15 @@ class MovieServiceSpec extends Specification {
     MovieRepository movieRepository
 
     Set<Integer> generatedIds
-    String testName
+    String testName1
+    String testName2
     String testCreateName
     String testDescription
     String testUpdateDescription
 
     def setup() {
-        testName = "Test Name"
+        testName1 = "Test Name1"
+        testName2 = "Test Name2"
         testCreateName = "Test Create Name"
         testDescription = "Test Description"
         testUpdateDescription = "Test Update Description"
@@ -63,7 +65,7 @@ class MovieServiceSpec extends Specification {
     def "Test Service Update Movie"() {
         when:
         def movie = new Movie()
-        movie.name = testName
+        movie.name = testName1
         movie.resolution = new Resolution(StaticValues.P1080)
         movie.owned = true
         movie.watched = true
@@ -71,7 +73,7 @@ class MovieServiceSpec extends Specification {
         generatedIds << movie.id
         def json = JsonOutput.toJson([
                 id: movie.id,
-                name: testName,
+                name: testName1,
                 resolution: StaticValues.P1080,
                 description: testUpdateDescription,
                 watched: false,
@@ -81,11 +83,39 @@ class MovieServiceSpec extends Specification {
         def result = movieRepository.findOne(movie.id)
 
         then:
-        result.name == testName
+        result.name == testName1
         result.resolution.id == StaticValues.P1080
         !result.owned
         !result.watched
         result.description == testUpdateDescription
         result.insertedOn != null
+    }
+
+    def "Test Service Counts"() {
+        when:
+        def movieItem1 = new Movie()
+        movieItem1.name = testName1
+        def movie1 = movieRepository.save(movieItem1)
+        generatedIds << movie1.id
+        def movieItem2 = new Movie()
+        movieItem2.name = testName2
+        movieItem2.owned = true
+        movieItem2.watched = true
+        def movie2 = movieRepository.save(movieItem2)
+        generatedIds << movie2.id
+        def result = movieService.count
+
+        then:
+        result.totalCount == 2
+        result.watchedCount == 1
+        result.notWatchedCount == 1
+        result.ownedCount == 1
+        result.notOwnedCount == 1
+        result.unknownResolutionCount == 2
+        result.p480Count == 0
+        result.p720Count == 0
+        result.p1080Count == 0
+        result.p1440Count == 0
+        result.p2160Count == 0
     }
 }
