@@ -1,12 +1,10 @@
 package com.benthum.movie.service
 
 import com.benthum.movie.StaticValues
-import com.benthum.movie.model.CreateMovie
 import com.benthum.movie.model.Movie
 import com.benthum.movie.model.MovieCount
 import com.benthum.movie.model.MovieMetadata
 import com.benthum.movie.model.Resolution
-import com.benthum.movie.model.UpdateMovie
 import com.benthum.movie.repository.MovieMetadataRepository
 import com.benthum.movie.repository.MovieRepository
 import com.fasterxml.jackson.databind.MapperFeature
@@ -28,12 +26,12 @@ class MovieService {
     void create(String createMovie) {
         def mapper = new ObjectMapper()
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
-        def input = mapper.readValue(createMovie, CreateMovie.class)
+        def input = mapper.readValue(createMovie, Movie.class)
         def movie = new Movie()
         movie.name = input.name
 
         if(input.resolution != null) {
-            movie.resolution = new Resolution(input.resolution)
+            movie.resolution = new Resolution(input.resolution.id)
         }
         movie.description = input.description
 
@@ -51,7 +49,7 @@ class MovieService {
     boolean update(String updateMovie) {
         def mapper = new ObjectMapper()
         mapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
-        def input = mapper.readValue(updateMovie, UpdateMovie.class)
+        def input = mapper.readValue(updateMovie, Movie.class)
         def movie
         if(input.id != null){
             movie = movieRepository.findOne(input.id)
@@ -67,7 +65,7 @@ class MovieService {
         }
         movie.name = input.name
         if(input.resolution != null) {
-            movie.resolution = new Resolution(input.resolution)
+            movie.resolution = new Resolution(input.resolution.id)
         }
         if(input.description != null) {
             movie.description = input.description

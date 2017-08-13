@@ -44,7 +44,7 @@ class MovieServiceSpec extends Specification {
         when:
         def json = JsonOutput.toJson([
                 name: testCreateName,
-                resolution: StaticValues.P1080,
+                resolution: new Resolution(StaticValues.P1080),
                 description: testDescription,
                 watched: false,
                 owned: false])
@@ -74,9 +74,9 @@ class MovieServiceSpec extends Specification {
         def json = JsonOutput.toJson([
                 id: movie.id,
                 name: testName1,
-                resolution: StaticValues.P1080,
+                resolution: null,
                 description: testUpdateDescription,
-                watched: false,
+                watched: null,
                 owned: false])
 
         movieService.update(json)
@@ -85,8 +85,8 @@ class MovieServiceSpec extends Specification {
         then:
         result.name == testName1
         result.resolution.id == StaticValues.P1080
+        result.watched
         !result.owned
-        !result.watched
         result.description == testUpdateDescription
         result.insertedOn != null
     }
