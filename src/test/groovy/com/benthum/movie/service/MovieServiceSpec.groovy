@@ -118,4 +118,46 @@ class MovieServiceSpec extends Specification {
         result.p1440Count == 0
         result.p2160Count == 0
     }
+
+    def "Test Service Get Metadata"() {
+        when:
+        def movie = new Movie()
+        movie.name = testName1
+        movie.resolution = new Resolution(StaticValues.P1080)
+        movie.owned = true
+        movie.watched = true
+        movie = movieRepository.save(movie)
+        generatedIds << movie.id
+        def list = movieService.getMetadata(StaticValues.WatchedTypeTrue)
+        def first = list.first()
+
+        then:
+        list.size() == 1
+        first.name == testName1
+        first.resolution.id == StaticValues.P1080
+        first.owned
+        first.watched
+        first.insertedOn != null
+    }
+
+    def "Test Service Get Detail"() {
+        when:
+        def movie = new Movie()
+        movie.name = testName1
+        movie.resolution = new Resolution(StaticValues.P1080)
+        movie.owned = true
+        movie.watched = true
+        movie.description = testDescription
+        movie = movieRepository.save(movie)
+        generatedIds << movie.id
+        def result = movieService.getDetail(movie.id)
+
+        then:
+        result.name == testName1
+        result.resolution.id == StaticValues.P1080
+        result.owned
+        result.watched
+        result.description == testDescription
+        result.insertedOn != null
+    }
 }

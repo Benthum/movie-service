@@ -1,7 +1,9 @@
 package com.benthum.movie.controller
 
 import com.benthum.movie.StaticValues
+import com.benthum.movie.model.Movie
 import com.benthum.movie.model.MovieCount
+import com.benthum.movie.model.MovieMetadata
 import com.benthum.movie.service.MovieService
 import groovy.json.JsonOutput
 import groovy.util.logging.Slf4j
@@ -62,6 +64,42 @@ class MovieController {
     ResponseEntity<Object> count() {
         try {
             return new ResponseEntity<MovieCount>(movieService.getCount(), HttpStatus.OK)
+        }
+        catch (Exception ex) {
+            def output = JsonOutput.toJson([
+                    message: StaticValues.InternalServerError,
+                    error: ex.message])
+            log.error(output, ex)
+            return new ResponseEntity<String>(output, HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.GET, value="/metadata", produces = "application/json")
+    @ResponseBody
+    ResponseEntity<Object> getMetadata(Integer type) {
+        try {
+            def list = movieService.getMetadata(type)
+            if(list != null) {
+                return new ResponseEntity<List<MovieMetadata>>(list, HttpStatus.OK)
+            }
+            def output = JsonOutput.toJson([
+                    message: StaticValues.UnableToGetMetadata])
+            return new ResponseEntity<Object>(output, HttpStatus.BAD_REQUEST)
+        }
+        catch (Exception ex) {
+            def output = JsonOutput.toJson([
+                    message: StaticValues.InternalServerError,
+                    error: ex.message])
+            log.error(output, ex)
+            return new ResponseEntity<String>(output, HttpStatus.INTERNAL_SERVER_ERROR)
+        }
+    }
+
+    @RequestMapping(method=RequestMethod.GET, value="/detail", produces = "application/json")
+    @ResponseBody
+    ResponseEntity<Object> getDetail(Integer id) {
+        try {
+            return new ResponseEntity<Movie>(movieService.getDetail(id), HttpStatus.OK)
         }
         catch (Exception ex) {
             def output = JsonOutput.toJson([
