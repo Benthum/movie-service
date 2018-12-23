@@ -1,28 +1,34 @@
 package com.benthum.movie
 
+import com.benthum.movie.model.MovieRequest
+import groovy.json.JsonOutput
+
 class StaticValues {
+    //Max Lengths
+    public final static int MovieNameMaxLength = 255
+
     //Response Strings
-    final static String InternalServerError = "There was a problem processing your request"
-    final static String UnableToUpdateMovie = "The requested movie was not found. Please create the movie before trying to update it."
-    final static String UnableToGetMetadata = "The requested metadata type was not found. Please select a supported metadata type."
+    public final static String CreateMovieError = "There was an error processing the request to create movie."
+    public final static String UpdateMovieError = "There was an error processing the request to update movie."
+    public final static String GetMovieError = "There was an error processing the request to get movie."
 
-    //Resolution Types
-    final static int Unknown = 0
-    final static int P480 = 1
-    final static int P720 = 2
-    final static int P1080 = 3
-    final static int P1440 = 4
-    final static int P2160 = 5
-
-    //Types of metadata
-    final static int WatchedTypeFalse = 0
-    final static int WatchedTypeTrue = 1
-    final static int OwnedTypeFalse = 2
-    final static int OwnedTypeTrue = 3
-    final static int ResolutionTypeUnknown = 4
-    final static int ResolutionType480P = 5
-    final static int ResolutionType720P = 6
-    final static int ResolutionType1080P = 7
-    final static int ResolutionType1440P = 8
-    final static int ResolutionType2160P = 8
+    //Dynamic Response String
+    static String UnableToCreateMovie(MovieRequest request) {
+        "Unable to process request to create movie for request: ${JsonOutput.toJson(request)}."
+    }
+    static String UnableToUpdateMovie(Long id, MovieRequest request) {
+        "Unable to process request to update movie for id: ${id}, request: ${JsonOutput.toJson(request)}."
+    }
+    static String UnableToGetMovie(Long id) {
+        "Unable to process request to get movie for id: ${id}."
+    }
+    static String MovieNotFound(Long id) {
+        "Unable to find movie id: ${id}."
+    }
+    static String InvalidMovieName(String name) {
+        "The movie name was found to be either null, empty, or too long. name: ${name}."
+    }
+    static String DuplicateMovieName(String name) {
+        "The movie name was found to already be registered. name: ${name}"
+    }
 }

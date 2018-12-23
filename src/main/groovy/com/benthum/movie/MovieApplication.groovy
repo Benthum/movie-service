@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 @EnableJpaAuditing
 class MovieApplication {
     static void main(String[] args) {
-        SpringApplication.run MovieApplication, args
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+        SpringApplication.run(MovieApplication.class, args)
     }
 }
