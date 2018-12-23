@@ -1,7 +1,7 @@
 buildscript {
     ext {
-        springBootVersion = '1.5.3.RELEASE'
-        hibernateVersion = '5.2.10.Final'
+        springBootVersion = '2.0.3.RELEASE'
+        spockVersion = '1.1-groovy-2.4'
     }
     repositories {
         mavenCentral()
@@ -11,18 +11,17 @@ buildscript {
     }
 }
 
-plugins {
-    id "org.flywaydb.flyway" version "4.0.3"
-}
-
+apply plugin: 'org.springframework.boot'
 apply plugin: 'groovy'
 apply plugin: 'war'
-apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'codenarc'
 
 war {
     baseName = 'movie-service'
     version = '1.0.0'
 }
+
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
@@ -34,26 +33,42 @@ configurations {
     providedRuntime
 }
 
+codenarcMain {
+    configFile = rootProject.file("config/codenarc/codenarcMain.groovy")
+
+    reports {
+        html.enabled = true
+    }
+}
+
+codenarcTest {
+    configFile = rootProject.file("config/codenarc/codenarcTest.groovy")
+
+    reports {
+        html.enabled = true
+    }
+}
+
 dependencies {
     compile("org.springframework.boot:spring-boot-starter-web")
     compile("org.springframework.boot:spring-boot-starter-actuator")
-    compile("org.springframework.boot:spring-boot-actuator-docs")
-    compile("org.springframework.boot:spring-boot-devtools")
     compile("org.springframework.boot:spring-boot-starter-data-jpa")
-    compile("org.hibernate:hibernate-core:${hibernateVersion}")
-    compile("org.hibernate:hibernate-validator")
-    compile("org.codehaus.groovy:groovy")
-    compile("org.codehaus.groovy:groovy-json")
-    compile("javax.ws.rs:javax.ws.rs-api:2.0.1")
-    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
-    runtime("mysql:mysql-connector-java")
-    compile("org.flywaydb:flyway-core:4.0.3")
 
-    testCompile("org.springframework.boot:spring-boot-starter-test")
-    testCompile("org.spockframework:spock-core")
-    testCompile("org.spockframework:spock-spring")
-    testRuntime("cglib:cglib-nodep:3.2.4") // allows mocking of classes (in addition to interfaces)
-    testRuntime("org.objenesis:objenesis:2.5.1") // allows mocking of classes without default constructor (together with CGLIB)
+    compile('org.flywaydb:flyway-core')
+    compile('org.codehaus.groovy:groovy')
+    compile('org.codehaus.groovy:groovy-json')
+    runtime('mysql:mysql-connector-java')
+
+    providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
+
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+    testCompile('org.codehaus.groovy.modules.http-builder:http-builder:0.7.1')
+    testCompile("org.spockframework:spock-core:${spockVersion}")
+    testCompile("org.spockframework:spock-spring:${spockVersion}")
+    testCompile('org.springframework.security:spring-security-test')
+
+    testRuntime('cglib:cglib-nodep:3.2.4') // allows mocking of classes (in addition to interfaces)
+    testRuntime('org.objenesis:objenesis:2.5.1') // allows mocking of classes without default constructor (together with CGLIB)
 }
 bootRun {
     systemProperties["spring.profiles.active"] = System.properties["spring.profiles.active"] ?: "development"

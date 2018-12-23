@@ -1,10 +1,4 @@
-
-spring.output.ansi.enabled: detect
-
-
-jasypt:
-    encryptor:
-        password: ${JASYPT_ENCRYPTOR_PASSWORD:}
+logging.level.root: ${ROOT_LOG_LEVEL:ERROR}
 
 ---
 server:
@@ -23,11 +17,6 @@ spring:
     url: ${DATASOURCE_URL:}
     username: ${DATASOURCE_USERNAME:}
     password: ${DATASOURCE_PASSWORD:}
-    dbcp:
-      driver-class-name: com.mysql.jdbc.Driver
-      max-active: 5
-      test-on-borrow: true
-      validation-query: SELECT 1
 
   jpa:
     hibernate:

@@ -2,9 +2,9 @@ package com.benthum.movie.service
 
 import com.benthum.movie.StaticValues
 import com.benthum.movie.model.Movie
-import com.benthum.movie.model.Resolution
+import com.benthum.movie.model.MovieRequest
+import com.benthum.movie.model.ValidationEnum
 import com.benthum.movie.repository.MovieRepository
-import groovy.json.JsonOutput
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ContextConfiguration
@@ -13,151 +13,223 @@ import spock.lang.Specification
 @ContextConfiguration
 @SpringBootTest
 class MovieServiceSpec extends Specification {
-
+    @Autowired
+    MovieRepository movieRepository
     @Autowired
     MovieService movieService
 
-    @Autowired
-    MovieRepository movieRepository
-
-    Set<Integer> generatedIds
-    String testName1
-    String testName2
-    String testCreateName
-    String testDescription
-    String testUpdateDescription
-
     def setup() {
-        testName1 = "Test Name1"
-        testName2 = "Test Name2"
-        testCreateName = "Test Create Name"
-        testDescription = "Test Description"
-        testUpdateDescription = "Test Update Description"
-        generatedIds = new ArrayList<Integer>()
+        movieService.movieRepository = movieRepository
     }
 
     def cleanup() {
-        generatedIds.each { movieRepository.delete(it) }
+        def all = movieRepository.findAll()
+        all.each {movieRepository.deleteById(it.id)}
     }
 
-    def "Test Service Create Movie"() {
-        when:
-        def json = JsonOutput.toJson([
-                name: testCreateName,
-                resolution: new Resolution(StaticValues.P1080),
-                description: testDescription,
-                watched: false,
-                owned: false])
+    def 'Create Movie - Success'() {
+        given:
+        def request = new MovieRequest(
+                name: "Test Name",
+                description: "Test Description"
+        )
 
-        movieService.create(json)
-        def result = movieRepository.findOneByName(testCreateName)
-        generatedIds << result.id
+        when:
+        def response = movieService.create(request)
 
         then:
-        result.name == testCreateName
-        result.resolution.id == StaticValues.P1080
-        !result.owned
-        !result.watched
-        result.description == testDescription
-        result.insertedOn != null
+        response
+        response.type == ValidationEnum.Valid
+        response.message == null
+        response.object != null
+        response.object?.id != null
+
+        Long id = response.object?.id
+        def foundMovie = movieRepository.findById(id)
+        foundMovie.present
+        def movie = foundMovie.get()
+        movie.id != null
+        movie.name == request.name
+        movie.description == request.description
+        movie.updatedOn != null
+        movie.enteredOn != null
     }
 
-    def "Test Service Update Movie"() {
+    def 'Create Movie - Duplicate Movie Name'() {
+        given:
+        def request = new MovieRequest(
+                name: "Test Name",
+                description: "Test Description"
+        )
+        def movie = new Movie(
+                name: request.name,
+                description: request.description
+        )
+
         when:
-        def movie = new Movie()
-        movie.name = testName1
-        movie.resolution = new Resolution(StaticValues.P1080)
-        movie.owned = true
-        movie.watched = true
+        movieRepository.save(movie)
+        def response = movieService.create(request)
+
+        then:
+        response
+        response.type == ValidationEnum.DuplicateMovieName
+        response.message == StaticValues.DuplicateMovieName(request.name)
+        response.object == null
+    }
+
+    def 'Create Movie - Unable to Create Movie'() {
+        given:
+        movieService.movieRepository = Stub(MovieRepository)
+        movieService.movieRepository.save(_ as Movie) >> {
+            Movie movie ->
+                throw new Exception()
+        }
+        def request = new MovieRequest(
+                name: "Test Name",
+                description: "Test Description"
+        )
+
+        when:
+        def response = movieService.create(request)
+
+        then:
+        response
+        response.type == ValidationEnum.UnableToCreateMovie
+        response.message == StaticValues.UnableToCreateMovie(request)
+        response.object == null
+    }
+
+    def 'Get Movie - Success'() {
+        given:
+        def movie = new Movie(
+                name: "Test Name",
+                description: "Test Description"
+        )
+
+        when:
         movie = movieRepository.save(movie)
-        generatedIds << movie.id
-        def json = JsonOutput.toJson([
-                id: movie.id,
-                name: testName1,
-                resolution: null,
-                description: testUpdateDescription,
-                watched: null,
-                owned: false])
-
-        movieService.update(json)
-        def result = movieRepository.findOne(movie.id)
+        def response = movieService.get(movie.id)
 
         then:
-        result.name == testName1
-        result.resolution.id == StaticValues.P1080
-        result.watched
-        !result.owned
-        result.description == testUpdateDescription
-        result.insertedOn != null
+        response
+        response.type == ValidationEnum.Valid
+        response.message == null
+        response.object != null
+        def result = response.object as MovieRequest
+
+        movie.name == result.name
+        movie.description == result.description
     }
 
-    def "Test Service Counts"() {
+    def 'Get Movie - Movie Not Found'() {
+        given:
+        def id = -1
+
         when:
-        def movieItem1 = new Movie()
-        movieItem1.name = testName1
-        def movie1 = movieRepository.save(movieItem1)
-        generatedIds << movie1.id
-        def movieItem2 = new Movie()
-        movieItem2.name = testName2
-        movieItem2.owned = true
-        movieItem2.watched = true
-        def movie2 = movieRepository.save(movieItem2)
-        generatedIds << movie2.id
-        def result = movieService.count
+        def response = movieService.get(id)
 
         then:
-        result.totalCount == 2
-        result.watchedCount == 1
-        result.notWatchedCount == 1
-        result.ownedCount == 1
-        result.notOwnedCount == 1
-        result.unknownResolutionCount == 2
-        result.p480Count == 0
-        result.p720Count == 0
-        result.p1080Count == 0
-        result.p1440Count == 0
-        result.p2160Count == 0
+        response
+        response.type == ValidationEnum.MovieNotFound
+        response.message == StaticValues.MovieNotFound(id)
+        response.object == null
     }
 
-    def "Test Service Get Metadata"() {
+    def 'Get Movie - Unable to Get Movie'() {
+        given:
+        movieService.movieRepository = Stub(MovieRepository)
+        movieService.movieRepository.findById(_ as Long) >> {
+            Long id ->
+                throw new Exception()
+        }
+        def movie = new Movie(
+                name: "Test Name",
+                description: "Test Description"
+        )
+
         when:
-        def movie = new Movie()
-        movie.name = testName1
-        movie.resolution = new Resolution(StaticValues.P1080)
-        movie.owned = true
-        movie.watched = true
         movie = movieRepository.save(movie)
-        generatedIds << movie.id
-        def list = movieService.getMetadata(StaticValues.WatchedTypeTrue)
-        def first = list.first()
+        def response = movieService.get(movie.id)
 
         then:
-        list.size() == 1
-        first.name == testName1
-        first.resolution.id == StaticValues.P1080
-        first.owned
-        first.watched
-        first.insertedOn != null
+        response
+        response.type == ValidationEnum.UnableToGetMovie
+        response.message == StaticValues.UnableToGetMovie(movie.id)
+        response.object == null
     }
 
-    def "Test Service Get Detail"() {
+    def 'Update Movie - Success'() {
+        given:
+        def request = new MovieRequest(
+                name: "Test Name2",
+                description: "Test Description2"
+        )
+        def movie = new Movie(
+                name: "Test Name",
+                description: "Test Description"
+        )
+
         when:
-        def movie = new Movie()
-        movie.name = testName1
-        movie.resolution = new Resolution(StaticValues.P1080)
-        movie.owned = true
-        movie.watched = true
-        movie.description = testDescription
         movie = movieRepository.save(movie)
-        generatedIds << movie.id
-        def result = movieService.getDetail(movie.id)
+        def response = movieService.update(movie.id, request)
+        def foundMovie = movieRepository.findById(movie.id)
+        def newMovie = foundMovie.get()
 
         then:
-        result.name == testName1
-        result.resolution.id == StaticValues.P1080
-        result.owned
-        result.watched
-        result.description == testDescription
-        result.insertedOn != null
+        response
+        response.type == ValidationEnum.Valid
+        response.message == null
+        response.object == null
+
+        movie.id == newMovie.id
+        movie.name != newMovie.name
+        movie.description != newMovie.description
+        request.name == newMovie.name
+        request.description == newMovie.description
+    }
+
+    def 'Update Movie - Movie Not Found'() {
+        given:
+        def request = new MovieRequest(
+                name: "Test Name",
+                description: "Test Description"
+        )
+        def id = -1
+
+        when:
+        def response = movieService.update(id, request)
+
+        then:
+        response
+        response.type == ValidationEnum.MovieNotFound
+        response.message == StaticValues.MovieNotFound(id)
+        response.object == null
+    }
+
+    def 'Update Movie - Unable to Update Movie'() {
+        given:
+        movieService.movieRepository = Stub(MovieRepository)
+        movieService.movieRepository.findById(_ as Long) >> {
+            Long id ->
+                throw new Exception()
+        }
+        def movie = new Movie(
+                name: "Test Name",
+                description: "Test Description"
+        )
+        def request = new MovieRequest(
+                name: "Test Name2",
+                description: "Test Description2"
+        )
+
+        when:
+        movie = movieRepository.save(movie)
+        def response = movieService.update(movie.id, request)
+
+        then:
+        response
+        response.type == ValidationEnum.UnableToUpdateMovie
+        response.message == StaticValues.UnableToUpdateMovie(movie.id, request)
+        response.object == null
     }
 }
